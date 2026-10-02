@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"mime"
 	"path"
@@ -21,10 +22,22 @@ var canonicalExtensions = map[string]string{
 	".f4v":  ".mp4",
 }
 
+// The system mime table (mailcap) may not know newer formats.
+var knownExtensions = map[string]string{
+	"image/heic": ".heic",
+	"image/heif": ".heif",
+}
+
 func ExtensionByMimeType(mimeType string) (string, error) {
+	if ext, ok := knownExtensions[mimeType]; ok {
+		return ext, nil
+	}
 	exts, err := mime.ExtensionsByType(mimeType)
 	if err != nil {
 		return "", err
+	}
+	if len(exts) == 0 {
+		return "", fmt.Errorf("no file extension known for %q", mimeType)
 	}
 
 	var ext string

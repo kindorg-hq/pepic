@@ -126,6 +126,16 @@ func (h *PepicHandler) uploadBytes(filename string, bytes []byte) (*entity.Proce
 		if file.IsImage() {
 			log.Printf("Processing image...")
 
+			// HEIC/HEIF become JPEG first, whatever auto_convert says: most
+			// browsers cannot display them, and the steps below re-encode in
+			// the source format, for which there is no HEVC encoder here.
+			if file.IsHEIF() {
+				err = h.Processing.Image.Convert(file, "image/jpeg")
+				if err != nil {
+					return file, err
+				}
+			}
+
 			err = h.Processing.Image.AutoRotate(file)
 			if err != nil {
 				return file, err

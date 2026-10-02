@@ -11,7 +11,8 @@ RUN go build -a -o /build/app -ldflags="-s -w -h" .
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates mailcap ffmpeg vips
+# vips-heif: HEIC/HEIF loader (iPhone photos), converted to JPEG on upload
+RUN apk --no-cache add ca-certificates mailcap ffmpeg vips vips-heif
 COPY --from=builder /build/app /app/pepic
 COPY html /app/html
 COPY static /app/static
