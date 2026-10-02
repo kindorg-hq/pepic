@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -17,10 +18,10 @@ func (h *PepicHandler) GetMeta(c echo.Context) error {
 	var files []*entity.ProcessingFile
 
 	for _, name := range names {
-		if !utils.IsSafeFileName(name) {
+		if strings.Contains(name, "..") || !utils.IsSafeFileName(name) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Bad file name")
 		}
-		file, err := h.Storage.GetFile("orig", name)
+		file, err := h.Storage.GetFile("orig", path.Base(name))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusNotFound, "File not found")
 		}
