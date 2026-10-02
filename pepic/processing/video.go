@@ -31,12 +31,15 @@ func (v *videoBackend) Transcode(file *entity.ProcessingFile, maxLength int) err
 		return errors.New("file data is empty, try reading it first")
 	}
 
-	// save bytes to disc because ffmpeg works with filenames
-	tempOrigFile := path.Join(config.App.Videos.FFmpeg.TempDir, file.Filename)
-	dst, err := os.Create(tempOrigFile)
+	// save bytes to disc because ffmpeg works with filenames. The temp names
+	// are random: the file name comes from the URL, and two requests for the
+	// same file must not share a temp file.
+	ext := path.Ext(path.Base(file.Filename))
+	dst, err := os.CreateTemp(config.App.Videos.FFmpeg.TempDir, "orig-*"+ext)
 	if err != nil {
 		return err
 	}
+	tempOrigFile := dst.Name()
 	defer dst.Close()
 	defer os.Remove(tempOrigFile)
 
@@ -46,12 +49,12 @@ func (v *videoBackend) Transcode(file *entity.ProcessingFile, maxLength int) err
 	}
 
 	// create temp file output
-	tempTransFile := path.Join(config.App.Videos.FFmpeg.TempDir, fmt.Sprintf("trans_%s", file.Filename))
-	dst, err = os.Create(tempTransFile)
+	out, err := os.CreateTemp(config.App.Videos.FFmpeg.TempDir, "trans-*"+ext)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	tempTransFile := out.Name()
+	defer out.Close()
 	defer os.Remove(tempTransFile)
 
 	// create and configure video transcoder
@@ -85,12 +88,15 @@ func (v *videoBackend) Convert(file *entity.ProcessingFile, newMimeType string) 
 		return errors.New("file data is empty, try reading it first")
 	}
 
-	// save bytes to disc because ffmpeg works with filenames
-	tempOrigFile := path.Join(config.App.Videos.FFmpeg.TempDir, file.Filename)
-	dst, err := os.Create(tempOrigFile)
+	// save bytes to disc because ffmpeg works with filenames. The temp names
+	// are random: the file name comes from the URL, and two requests for the
+	// same file must not share a temp file.
+	ext := path.Ext(path.Base(file.Filename))
+	dst, err := os.CreateTemp(config.App.Videos.FFmpeg.TempDir, "orig-*"+ext)
 	if err != nil {
 		return err
 	}
+	tempOrigFile := dst.Name()
 	defer dst.Close()
 	defer os.Remove(tempOrigFile)
 
@@ -102,12 +108,12 @@ func (v *videoBackend) Convert(file *entity.ProcessingFile, newMimeType string) 
 	// create temp file output
 	newExt, _ := utils.ExtensionByMimeType(newMimeType)
 	convFilename := utils.ReplaceExt(file.Filename, newExt)
-	tempTransFile := path.Join(config.App.Videos.FFmpeg.TempDir, fmt.Sprintf("conv_%s", convFilename))
-	dst, err = os.Create(tempTransFile)
+	out, err := os.CreateTemp(config.App.Videos.FFmpeg.TempDir, "conv-*"+newExt)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	tempTransFile := out.Name()
+	defer out.Close()
 	defer os.Remove(tempTransFile)
 
 	// create and configure video transcoder

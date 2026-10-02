@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/vas3k/pepic/pepic/config"
 	"github.com/vas3k/pepic/pepic/entity"
+	"github.com/vas3k/pepic/pepic/utils"
 )
 
 const MinLength = 200
@@ -16,6 +17,9 @@ const MinLength = 200
 // GET /:name
 // Returns originally stored file
 func (h *PepicHandler) GetOriginalFile(c echo.Context) error {
+	if !utils.IsSafeFileName(c.Param("name")) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Bad file name")
+	}
 	file, err := h.Storage.GetFile("orig", c.Param("name"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "File not found")
@@ -49,6 +53,9 @@ func (h *PepicHandler) GetResizedFile(c echo.Context) error {
 
 	// resize and store the resized one
 	filename := c.Param("name")
+	if !utils.IsSafeFileName(filename) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Bad file name")
+	}
 	file, err := h.resizeFile(filename, length)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)

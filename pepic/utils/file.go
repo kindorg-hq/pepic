@@ -76,3 +76,10 @@ func CalculateHashName(file *entity.ProcessingFile) (string, error) {
 func CanonizeFileName(filename string) string {
 	return SplitFileNameNGrams(filename, config.App.Global.FileTreeSplitChars, 10)
 }
+
+// IsSafeFileName reports whether name is a bare file name: no directories,
+// no "..". Names come straight from the URL and end up in storage paths.
+func IsSafeFileName(name string) bool {
+	return name != "" && name != "." && !strings.Contains(name, "..") &&
+		!strings.ContainsAny(name, "/\\\x00")
+}
