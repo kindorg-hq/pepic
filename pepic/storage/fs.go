@@ -1,11 +1,16 @@
 package storage
 
 import (
-	"github.com/labstack/echo/v4"
-	"io/ioutil"
+	"errors"
+	"net/http"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
+
+	"github.com/labstack/echo/v4"
 )
+
+var errOutsideStorage = errors.New("path escapes the storage directory")
 
 type FileSystemBackend struct {
 	dir string
@@ -17,10 +22,25 @@ func NewFileSystemBackend(dir string) *FileSystemBackend {
 	return fs
 }
 
-func (fs *FileSystemBackend) PutObject(objectName string, data []byte) (string, error) {
-	fullPath := path.Join(fs.dir, objectName)
+// fullPath resolves objectName inside fs.dir and refuses anything that would
+// land outside it, whatever the caller passed in.
+func (fs *FileSystemBackend) fullPath(objectName string) (string, error) {
+	root := filepath.Clean(fs.dir)
+	full := filepath.Join(root, objectName)
+	rel, err := filepath.Rel(root, full)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", errOutsideStorage
+	}
+	return full, nil
+}
 
-	if err := os.MkdirAll(path.Dir(fullPath), os.ModePerm); err != nil {
+func (fs *FileSystemBackend) PutObject(objectName string, data []byte) (string, error) {
+	fullPath, err := fs.fullPath(objectName)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(fullPath), os.ModePerm); err != nil {
 		return "", err
 	}
 
@@ -40,9 +60,12 @@ func (fs *FileSystemBackend) PutObject(objectName string, data []byte) (string, 
 }
 
 func (fs *FileSystemBackend) GetObject(objectName string) ([]byte, error) {
-	fullPath := path.Join(fs.dir, objectName)
+	fullPath, err := fs.fullPath(objectName)
+	if err != nil {
+		return nil, err
+	}
 
-	data, err := ioutil.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +74,10 @@ func (fs *FileSystemBackend) GetObject(objectName string) ([]byte, error) {
 }
 
 func (fs *FileSystemBackend) IsExists(objectName string) bool {
-	fullPath := path.Join(fs.dir, objectName)
+	fullPath, err := fs.fullPath(objectName)
+	if err != nil {
+		return false
+	}
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		return false
@@ -61,11 +87,15 @@ func (fs *FileSystemBackend) IsExists(objectName string) bool {
 }
 
 func (fs *FileSystemBackend) Size(objectName string) int64 {
-	file, err := os.Open(path.Join(fs.dir, objectName))
-	defer file.Close()
+	fullPath, err := fs.fullPath(objectName)
 	if err != nil {
 		return 0
 	}
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return 0
+	}
+	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
@@ -75,5 +105,9 @@ func (fs *FileSystemBackend) Size(objectName string) int64 {
 }
 
 func (fs *FileSystemBackend) Proxy(c echo.Context, objectName string) error {
-	return c.File(path.Join(fs.dir, objectName))
+	fullPath, err := fs.fullPath(objectName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "File not found")
+	}
+	return c.File(fullPath)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/vas3k/pepic/pepic/config"
 	"github.com/vas3k/pepic/pepic/entity"
+	"github.com/vas3k/pepic/pepic/utils"
 )
 
 // GET /meta/:name
@@ -16,6 +17,9 @@ func (h *PepicHandler) GetMeta(c echo.Context) error {
 	var files []*entity.ProcessingFile
 
 	for _, name := range names {
+		if !utils.IsSafeFileName(name) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Bad file name")
+		}
 		file, err := h.Storage.GetFile("orig", name)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusNotFound, "File not found")
