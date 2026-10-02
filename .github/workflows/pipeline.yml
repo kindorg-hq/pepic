@@ -1,0 +1,41 @@
+# The golden path from kindorg-hq/ci: checks on every PR, a release PR kept up
+# to date on master, and delivery to the cluster — only when a release is cut.
+name: pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    if: github.event_name == 'pull_request'
+    uses: kindorg-hq/ci/.github/workflows/checks.yml@v1
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      images: '[{"name": "pepic", "context": ".", "dockerfile": "Dockerfile"}]'
+
+  release:
+    if: github.event_name == 'push'
+    uses: kindorg-hq/ci/.github/workflows/release.yml@v1
+    secrets: inherit
+
+  deliver:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    uses: kindorg-hq/ci/.github/workflows/deliver.yml@v1
+    permissions:
+      contents: read
+      packages: write
+    with:
+      app: pepic
+      version: ${{ needs.release.outputs.version }}
+      ref: ${{ needs.release.outputs.tag }}
+      release-url: ${{ needs.release.outputs.url }}
+      images: '[{"name": "pepic", "context": ".", "dockerfile": "Dockerfile"}]'
+    secrets: inherit

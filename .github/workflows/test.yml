@@ -1,0 +1,23 @@
+# pepic's own tests — the part the golden path does not cover. Go with CGO and
+# libvips, so they run in the same Alpine the image is built from.
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: go test
+    runs-on: ubuntu-24.04-arm
+    container: alpine:edge
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: apk add --no-cache go gcc g++ vips-dev
+      - run: go vet ./... && go test ./...
