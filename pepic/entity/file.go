@@ -22,6 +22,11 @@ func (p *ProcessingFile) IsGIF() bool {
 	return p.Mime == "image/gif"
 }
 
+// IsHEIF: iPhone photos. Browsers other than Safari cannot show them.
+func (p *ProcessingFile) IsHEIF() bool {
+	return p.Mime == "image/heic" || p.Mime == "image/heif"
+}
+
 func (p *ProcessingFile) IsImage() bool {
 	return strings.HasPrefix(p.Mime, "image/")
 }
