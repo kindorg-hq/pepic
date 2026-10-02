@@ -6,6 +6,9 @@ on:
   pull_request:
   push:
     branches: [master]
+  # Re-deliver the LATEST release — for a delivery that died on the way (a
+  # stuck runner). Not a rollback: it cannot deliver an older version.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,17 +28,39 @@ jobs:
     uses: kindorg-hq/ci/.github/workflows/release.yml@v1
     secrets: inherit
 
+  latest:
+    name: Latest release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.r.outputs.version }}
+      tag: ${{ steps.r.outputs.tag }}
+      url: ${{ steps.r.outputs.url }}
+    steps:
+      - id: r
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName,url --jq '"tag=\(.tagName)\nurl=\(.url)"' >> "$GITHUB_OUTPUT"
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "Re-delivering $tag" >> "$GITHUB_STEP_SUMMARY"
+
   deliver:
-    needs: release
-    if: needs.release.outputs.released == 'true'
+    needs: [release, latest]
+    if: >-
+      always() && (needs.release.outputs.released == 'true'
+      || (github.event_name == 'workflow_dispatch' && needs.latest.result == 'success'))
     uses: kindorg-hq/ci/.github/workflows/deliver.yml@v1
     permissions:
       contents: read
       packages: write
     with:
       app: pepic
-      version: ${{ needs.release.outputs.version }}
-      ref: ${{ needs.release.outputs.tag }}
-      release-url: ${{ needs.release.outputs.url }}
+      version: ${{ needs.release.outputs.version || needs.latest.outputs.version }}
+      ref: ${{ needs.release.outputs.tag || needs.latest.outputs.tag }}
+      release-url: ${{ needs.release.outputs.url || needs.latest.outputs.url }}
       images: '[{"name": "pepic", "context": ".", "dockerfile": "Dockerfile"}]'
     secrets: inherit
