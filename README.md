@@ -229,22 +229,27 @@ server {
 ## 🚚 How it ships
 
 This fork runs at https://media.heynik.blog and ships through the
-[kindorg-hq/ci golden path](https://github.com/kindorg-hq/ci) (v3):
-`.github/workflows/pipeline.yml` is one call of it.
+[kindorg-hq/ci golden path](https://github.com/kindorg-hq/ci) (v4): three
+small callers in `.github/workflows/`, one per event, each run shown as its
+Stages.
 
-- **A merge to `master` ships.** Every PR runs the Checks: the Dockerfile's
-  `test` stage (`go vet` + `go test`), the image build and scan, the PR title,
-  secrets and dependency review. On merge the image is built once and scanned.
-- **What ships is a Releasable change**: a PR titled `feat`, `fix`, `perf` or
-  breaking becomes a GitHub Release (`vX.Y.Z`) on merge, and that very image is
-  promoted and pinned by digest in homelab-k8s, where ArgoCD rolls it out.
-  Other merges (`chore`, `ci`, `docs`, …) ship with the next Release.
+- **Every PR** (`pull-request.yml`): `ci / Build` runs the Dockerfile's
+  `test` stage (`go vet` + `go test`) and builds the image; `ci / Accept`
+  scans it and checks the PR title, secrets and new dependencies. Those two
+  checks are required to merge.
+- **A merge to `master` ships** (`ship.yml`): Build → Accept → Deliver. The
+  image is built once, pushed as `:<commit-sha>` and scanned. A PR titled
+  `feat`, `fix`, `perf` or breaking becomes a GitHub Release (`vX.Y.Z`) on
+  merge, and that very image is promoted and pinned by digest in homelab-k8s,
+  where ArgoCD rolls it out. Other merges (`chore`, `ci`, `docs`, …) end at
+  Deliver with "nothing to release" and ship with the next Release.
 - **Where to see it**: a merged PR gets the `released` label and a
   "vX.Y.Z recorded" comment (later "running" / "degraded"); the release
   commit's `production` deployment (Environments, on the repo page) is the
   source of truth.
-- **Re-deliver** the latest Release (a delivery that died on the way):
-  `gh workflow run pipeline.yml --repo kindorg-hq/pepic`.
+- **Re-deliver** the latest Release (a delivery that died on the way;
+  `redeliver.yml`, nothing rebuilt):
+  `gh workflow run redeliver.yml --repo kindorg-hq/pepic`.
 
 Releases up to 1.0.0 are in [CHANGELOG.md](CHANGELOG.md); later ones in
 [GitHub Releases](https://github.com/kindorg-hq/pepic/releases).
