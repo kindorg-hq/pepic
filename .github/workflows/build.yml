@@ -8,9 +8,10 @@ name: Build and publish (arm64)
 # matters here: the Dockerfile uses CGO with vips and ffmpeg, and building that
 # under QEMU would take disproportionately long.
 
+# RETIRED: pipeline.yml (kindorg-hq/ci golden path) builds and delivers now —
+# only releases. This stays as a manual fallback until the first release
+# goes out through the new path, then it is deleted.
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
