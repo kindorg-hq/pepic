@@ -1,0 +1,4 @@
+# Not in the build context: .git differs on every checkout, so COPY . . would
+# never match a cached layer (kindorg-hq/ci README, "How Build caches").
+.git
+.github
