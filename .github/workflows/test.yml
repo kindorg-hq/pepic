@@ -13,7 +13,9 @@ permissions:
 jobs:
   go:
     name: go test
-    runs-on: ubuntu-24.04-arm
+    # x64: GitHub runs JavaScript actions (checkout) inside Alpine containers
+    # only on x64 runners. The tests do not care about the architecture.
+    runs-on: ubuntu-24.04
     container: alpine:edge
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
