@@ -16,4 +16,5 @@ jobs:
       app: pepic
       images: '[{"name": "pepic"}]'
       url: https://media.heynik.blog
-    secrets: inherit
+    secrets:
+      KINDORG_CI_APP_KEY: ${{ secrets.KINDORG_CI_APP_KEY }}

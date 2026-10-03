@@ -228,9 +228,9 @@ server {
 
 ## 🚚 How it ships
 
-This fork runs at https://media.heynik.blog and ships through the
-[kindorg-hq/ci golden path](https://github.com/kindorg-hq/ci) (v4): three
-small callers in `.github/workflows/`, one per event, each run shown as its
+This fork runs at https://media.heynik.blog and ships through
+[ci v4](https://github.com/kindorg-hq/ci) (kindorg-hq/ci): three small
+callers in `.github/workflows/`, one per event, each run shown as its
 Stages.
 
 - **Every PR** (`pull-request.yml`): `ci / Build` runs the Dockerfile's

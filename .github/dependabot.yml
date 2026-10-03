@@ -1,4 +1,4 @@
-# What ships is decided by the commit prefix (kindorg-hq/ci golden path):
+# What ships is decided by the commit prefix (kindorg-hq/ci v4):
 # Go modules are runtime dependencies, so fix(deps) cuts a Release; Actions
 # and the Docker base images are chore(deps) and ship with the next one.
 version: 2

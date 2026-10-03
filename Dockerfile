@@ -26,7 +26,7 @@ COPY --from=deps /deps.txt /deps.txt
 RUN xargs go build < /deps.txt
 COPY . .
 
-# The tests. The golden path builds this stage before the image, on every PR
+# The tests. ci v4 (Build) runs this stage before the image, on every PR
 # and every merge; locally: docker build --target test .
 FROM src AS test
 RUN go vet ./... && go test ./...
